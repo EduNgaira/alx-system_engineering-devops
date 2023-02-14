@@ -1,2 +1,2 @@
 #!/bin/bash
-lmp -a
+ls -xamp
