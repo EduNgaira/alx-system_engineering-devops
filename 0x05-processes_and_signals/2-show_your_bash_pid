@@ -1,0 +1,5 @@
+#!/usr/bin/env bash
+# Displays acurrently running processes containing the keyword.
+# shellcheck disable=SC2009
+
+ps -aux | grep bash
