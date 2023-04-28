@@ -1,0 +1,10 @@
+#!/usr/bin/env bash
+# Script creates /var/run/myscript.pid file containing its PID
+# Displays To infinity and beyond
+# Displays I hate the kill command on getting a SIGTERM signal
+# Displays Y U no love me?! on getting SIGINT signal
+# Deletes /var/run/myscript.pid file and self-terminates on receiving a SIGQUIT or SIGTERM signal
+
+
+ps | pgrep bash | head -n 1 | awk '{print $1}' > /var/run/myscript.pid
+redirect pid
