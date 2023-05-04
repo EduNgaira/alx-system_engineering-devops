@@ -1,0 +1,8 @@
+#!/usr/bin/env bash
+# Shows current directory list of contents.
+#   Only displays the part of the name after the first dash. 
+
+contents=$(ls)
+for i in $contents; do
+  echo "$i" | cut -d '-' -f2
+done
