@@ -1,9 +1,32 @@
 #!/usr/bin/env bash
-# Script that configures Nginx server with a custom header
-apt-get -y update
-apt-get -y install nginx
-echo "Hello World!" > /var/www/html/index.nginx-debian.html
-echo "Ceci n'est pas une page" > /usr/share/nginx/html/custom_404.html
-sed -i "s/server_name _;/server_name _;\n\trewrite ^\/redirect_me https:\/\/github.com\/Tolulope05 permanent;\n\n\terror_page 404 \/custom_404.html;\n\tlocation = \/custom_404.html {\n\t\troot \/usr\/share\/nginx\/html;\n\t\tinternal;\n\t}/" /etc/nginx/sites-available/default
-sed -i "s/include \/etc\/nginx\/sites-enabled\/\*;/include \/etc\/nginx\/sites-enabled\/\*;\n\tadd_header X-Served-By \"$HOSTNAME\";/" /etc/nginx/nginx.conf
-service nginx start
+# bash: install and configure HAProxy as a LB
+
+sudo apt-get -y update
+sudo apt-get install -y haproxy
+
+# configure HAProxy
+sudo mv /etc/haproxy/haproxy.cfg /etc/haproxy/haproxy.cfg.backup
+
+echo "
+frontend frontend_http
+    bind *:80
+    mode http
+    default_backend backend_http
+
+backend backend_http
+    mode http
+    balance roundrobin
+    server 194126-web-01 35.168.8.157 check
+    server 194126-web-02 100.26.246.172 check
+" | sudo tee /etc/haproxy/haproxy.cfg > /dev/null
+
+# ascertain that HAproxy can be managed via an init script; start
+sudo sed -i 's/ENABLED=0/ENABLED=1/' /etc/default/haproxy
+sudo service haproxy start
+
+# verify HAProxy configuration
+sleep 5  # wait for HAProxy to start
+curl -Is localhost | grep "Server:\|X-Served-By:"
+
+# restart HAProxy LB to apply changes
+sudo service haproxy restart
