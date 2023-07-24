@@ -1,0 +1,5 @@
+#!/usr/bin/env bash
+# script to display liseteninng ports and PID and name
+
+netstat -lp
+
