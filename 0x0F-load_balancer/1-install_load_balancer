@@ -1,21 +1,32 @@
 #!/usr/bin/env bash
-# configures a new HAproxy as a load balancer
+# bash: install and configure HAProxy as a LB
 
-# Install HAproxy on a server
-apt-get -y update
-apt-get -y install haproxy=1.6.\*
+sudo apt-get -y update
+sudo apt-get install -y haproxy
 
-# Configure haproxy configuration file to distribute requests using a roundrobin algorithm
-echo '
-frontend edungaira.tech
-        bind 0:80
-        default_backend web_servers
+# configure HAProxy
+sudo mv /etc/haproxy/haproxy.cfg /etc/haproxy/haproxy.cfg.backup
 
-backend web_servers
-        balance roundrobin
-        serve 200504-web-01 35.168.8.157.0:80
-        server 200504-web-02 34.201.165.197.0:80
-' >> /etc/haproxy/haproxy.cfg
+echo "
+frontend frontend_http
+    bind *:80
+    mode http
+    default_backend backend_http
 
-# Restart HAproxy service
-service haproxy restart
+backend backend_http
+    mode http
+    balance roundrobin
+    server 194126-web-01 54.196.27.23:80 check
+    server 194126-web-02 54.157.128.152:80 check
+" | sudo tee /etc/haproxy/haproxy.cfg > /dev/null
+
+# ascertain that HAproxy can be managed via an init script; start
+sudo sed -i 's/ENABLED=0/ENABLED=1/' /etc/default/haproxy
+sudo service haproxy start
+
+# verify HAProxy configuration
+sleep 5  # wait for HAProxy to start
+curl -Is localhost | grep "Server:\|X-Served-By:"
+
+# restart HAProxy LB to apply changes
+sudo service haproxy restart
