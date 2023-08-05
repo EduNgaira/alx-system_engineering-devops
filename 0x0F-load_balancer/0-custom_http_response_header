@@ -1,32 +1,34 @@
 #!/usr/bin/env bash
-# bash: install and configure HAProxy as a LB
+# configures a new Ubuntu machine
 
-sudo apt-get -y update
-sudo apt-get install -y haproxy
+# Install nginx on web-01 server
+apt-get -y update
+apt-get -y install nginx
 
-# configure HAProxy
-sudo mv /etc/haproxy/haproxy.cfg /etc/haproxy/haproxy.cfg.backup
+# Add custom response header to know the server name for debugging
+HOST_NAME=$(hostname)
+HEADER="\\\n\tadd_header X-Served-By $HOST_NAME;\n"
+FIND=$(grep "X-Server-by" /etc/nginx/sites-available/default)
+if [[ -z $FIND ]]; then
+    sed -i "23i $HEADER" /etc/nginx/sites-available/default
+fi
 
-echo "
-frontend frontend_http
-    bind *:80
-    mode http
-    default_backend backend_http
+# Create a firts index.html page
+echo "Hello World!" > /var/www/html/index.html
 
-backend backend_http
-    mode http
-    balance roundrobin
-    server 194126-web-01 35.168.8.157 check
-    server 194126-web-02 100.26.246.172 check
-" | sudo tee /etc/haproxy/haproxy.cfg > /dev/null
+# Add to the nginx configuration file a redirection to another page
+FIND=$(grep "redirect_me" /etc/nginx/sites-available/default)
+STRING="\\\n\tlocation /redirect_me {\n\t\t return 301 https://www.youtube.com/watch?v=3MbaGJN2ioQ;\n\t}\n"
+if [[ -z $FIND ]]; then
+    sed -i "42i $STRING" /etc/nginx/sites-available/default
+fi
 
-# ascertain that HAproxy can be managed via an init script; start
-sudo sed -i 's/ENABLED=0/ENABLED=1/' /etc/default/haproxy
-sudo service haproxy start
+# Add to the nginx configuration file a error page 404
+FIND=$(grep "error_page 404" /etc/nginx/sites-available/default)
+ERROR="\\\n\terror_page 404 /custom_404.html;\n"
+if [[ -z $FIND ]]; then
+    echo "Ceci n'est pas une page" > /var/www/html/custom_404.html
+    sed -i "40i $ERROR" /etc/nginx/sites-available/default
+fi
 
-# verify HAProxy configuration
-sleep 5  # wait for HAProxy to start
-curl -Is localhost | grep "Server:\|X-Served-By:"
-
-# restart HAProxy LB to apply changes
-sudo service haproxy restart
+service nginx restart
